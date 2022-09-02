@@ -1,0 +1,82 @@
+FUNCTION_BLOCK Inverted_Pendulum
+
+    VAR_INPUT
+        theta : REAL;
+        theta_dot : REAL; 
+        x_dot : REAL; 
+    END_VAR
+
+    VAR_OUTPUT
+        F : REAL; 
+    END_VAR
+
+    FUZZIFY theta
+        TERM DOWN_LEFT :=  (310,0) (360,1);
+        TERM LEFT :=  (190,0) (270,1) (320,0);
+        TERM UP_LEFT :=  (180,0) (190,1) (240,0);
+        TERM STABLE :=  (170,0) (180,1) (190,0);
+        TERM UP_RIGHT :=  (110,0) (170,1) (180,0);
+        TERM RIGHT :=  (40,0) (90,1) (165,0);
+        TERM DOWN_RIGHT :=  (0,1) (55,0);      
+    END_FUZZIFY
+
+    FUZZIFY theta_dot
+        TERM CCWF := (-7,1) (-2,0);
+        TERM CCWS := (-3,0) (-1,1) (0,0);
+        TERM ST := (-0.4,0) (0,1) (0.4,0);
+        TERM CWS := (0,0) (1,1) (3,0);
+        TERM CWF := (2,0) (7,1);
+    END_FUZZIFY
+
+    DEFUZZIFY F
+        TERM LF := (-60,0) (-30,1) (-5,0);
+        TERM LS := (-30,0) (-10,1) (0,0);
+        TERM ST := (-8,0) (0,1) (8,0);
+        TERM RS := (0,0) (10,1) (30,0);
+        TERM RF := (10,0) (30,1) (60,0);
+        ACCU : MAX;
+        METHOD : COG;
+        DEFAULT := 0;
+    END_DEFUZZIFY
+
+    RULEBLOCK Inverted_Pendulum
+        AND : MIN;
+        OR : MAX;
+
+        RULE 1: IF theta IS STABLE AND theta_dot IS ST THEN F IS ST;
+
+        RULE 2: IF theta IS STABLE AND theta_dot IS CWF THEN F IS LF;
+        RULE 3: IF theta IS STABLE AND theta_dot IS CWS THEN F IS LF;
+        
+        RULE 4: IF theta IS STABLE AND theta_dot IS CCWF THEN F IS RF;
+        RULE 5: IF theta IS STABLE AND theta_dot IS CCWS THEN F IS RF;
+
+        (* DOWN RIGHT/LEFT *)
+        RULE 6: IF theta IS DOWN_RIGHT AND (theta_dot IS CWS OR 
+                theta_dot IS CWF) THEN F IS LF;
+
+        RULE 7: IF theta IS DOWN_LEFT AND (theta_dot IS CCWS OR
+                theta_dot IS CCWF) THEN F IS RF;
+        
+        RULE 8: IF theta IS RIGHT AND theta_dot IS CWF THEN F IS LF;
+        RULE 9: IF theta IS RIGHT AND theta_dot IS CCWF THEN F IS RS;
+        RULE 10: IF theta IS LEFT AND theta_dot IS CCWF THEN F IS RF;
+        RULE 11: IF theta IS LEFT AND theta_dot IS CWF THEN F IS LS;
+
+        RULE 12: IF theta IS UP_LEFT AND theta_dot IS CWF THEN F IS LF;
+        RULE 13: IF theta IS UP_LEFT AND theta_dot IS CWS THEN F IS LS;
+        
+        RULE 14: IF theta IS UP_RIGHT AND theta_dot IS CCWF THEN F IS RF;
+        RULE 15: IF theta IS UP_RIGHT AND theta_dot IS CCWS THEN F IS RS;
+
+        RULE 16: IF theta IS DOWN_RIGHT AND theta_dot IS CCWF THEN F IS LS;
+        RULE 17: IF theta IS DOWN_LEFT AND theta_dot IS CWF THEN F IS RS;
+        RULE 18: IF theta IS UP_RIGHT AND theta_dot IS ST THEN F IS RS;
+        RULE 19: IF theta IS UP_LEFT AND theta_dot IS ST THEN F IS LS;
+
+        RULE 20: IF theta IS LEFT AND theta_dot IS ST THEN F IS RF;
+        RULE 21: IF theta IS RIGHT AND theta_dot IS ST THEN F IS LF;
+        
+    END_RULEBLOCK
+
+END_FUNCTION_BLOCK
